@@ -1,134 +1,104 @@
-#!/usr/bin/env python3
-
 import sys
+import argparse
+from typing import List
 
-# Define mappings for English to Braille
-ENGLISH_TO_BRAILLE = {
-    # Letters a-z
+# Braille to English and English to Braille mappings
+braille_map = {
     'a': 'O.....', 'b': 'O.O...', 'c': 'OO....', 'd': 'OO.O..', 'e': 'O..O..',
     'f': 'OOO...', 'g': 'OOOO..', 'h': 'O.OO..', 'i': '.OO...', 'j': '.OOO..',
     'k': 'O...O.', 'l': 'O.O.O.', 'm': 'OO..O.', 'n': 'OO.OO.', 'o': 'O..OO.',
     'p': 'OOO.O.', 'q': 'OOOOO.', 'r': 'O.OOO.', 's': '.OO.O.', 't': '.OOOO.',
     'u': 'O...OO', 'v': 'O.O.OO', 'w': '.OOO.O', 'x': 'OO..OO', 'y': 'OO.OOO', 'z': 'O..OOO',
-    # Numbers 0-9
-    '0': '.OOOOO', '1': 'O.....', '2': 'O.O...', '3': 'OO....', '4': 'OO.O..',
-    '5': 'O..O..', '6': 'OOO...', '7': 'OOOO..', '8': 'O.OO..', '9': '.OO...',
-    # Space
-    ' ': '......',
+    '1': 'O.....', '2': 'O.O...', '3': 'OO....', '4': 'OO.O..', '5': 'O..O..',
+    '6': 'OOO...', '7': 'OOOO..', '8': 'O.OO..', '9': '.OO...', '0': '.OOO..',
+    ' ': '......'
 }
 
-# Special symbols
-CAPITALIZE = '.....O'  # Indicates that the next character is capitalized
-NUMBER_SIGN = '....OO'  # Indicates that the following characters are numbers until a space
+braille_to_english_map = {v: k for k, v in braille_map.items()}
 
-# Mapping letters a-j to numbers 1-0 (for Braille to English conversion)
-NUMBERS_MAP = {
-    'a': '1', 'b': '2', 'c': '3', 'd': '4', 'e': '5',
-    'f': '6', 'g': '7', 'h': '8', 'i': '9', 'j': '0',
-}
+CAPITALIZE_SYMBOL = '.....O'
+NUMBER_SYMBOL = '....OO'
+braille_to_number_map = {c: str(i) for i, c in enumerate('abcdefghij', start=1)}
 
-# Reverse mapping for Braille to English
-BRAILLE_TO_ENGLISH = {v: k for k, v in ENGLISH_TO_BRAILLE.items()}
+def is_braille(input_str: str) -> bool:
+    """Check if the input string is Braille."""
+    return all(c in {'O', '.', ' '} for c in input_str)
 
-def is_braille(input_str):
-    """
-    Determine if the input string is Braille.
-    Only allows characters 'O', '.', and spaces.
-    """
-    valid_chars = {'O', '.', ' '}
-    return all(char in valid_chars for char in input_str)
-
-def english_to_braille(text):
-    """
-    Convert English text to Braille, handling capitalization and numbers.
-    """
+def english_to_braille(text: str) -> str:
+    """Convert English text to Braille."""
     braille = []
-    number_mode = False
-
     for char in text:
         if char.isupper():
-            # Capital letter
-            braille.append(CAPITALIZE)
-            braille.append(ENGLISH_TO_BRAILLE[char.lower()])
-            number_mode = False
+            braille.append(CAPITALIZE_SYMBOL)
+            braille.append(braille_map[char.lower()])
         elif char.isdigit():
-            # Number
-            if not number_mode:
-                braille.append(NUMBER_SIGN)
-                number_mode = True
-            braille.append(ENGLISH_TO_BRAILLE[char])
-        elif char == ' ':
-            # Space
-            braille.append(ENGLISH_TO_BRAILLE[' '])
-            number_mode = False
+            braille.append(NUMBER_SYMBOL)
+            braille.append(braille_map[char])
+        elif char in braille_map:
+            braille.append(braille_map[char])
         else:
-            # Lowercase letter or unknown character
-            braille.append(ENGLISH_TO_BRAILLE.get(char, '......'))
-            number_mode = False
-
+            braille.append('??????')  # Handle unsupported characters
     return ''.join(braille)
 
-def braille_to_english(braille_str):
-    """
-    Convert Braille string to English text, handling capitalization and numbers.
-    """
+def braille_to_english(braille_str: str) -> str:
+    """Convert Braille to English text."""
     english = []
     i = 0
-    number_mode = False
-    capitalize_next = False
-    braille_length = len(braille_str)
+    is_number_mode = False
+    is_capital_mode = False
 
-    while i + 6 <= braille_length:
-        chunk = braille_str[i:i+6]
+    while i < len(braille_str):
+        chunk = braille_str[i:i + 6]
 
-        if chunk == CAPITALIZE:
-            capitalize_next = True
+        if chunk == CAPITALIZE_SYMBOL:
+            is_capital_mode = True
             i += 6
             continue
-        elif chunk == NUMBER_SIGN:
-            number_mode = True
+
+        if chunk == NUMBER_SYMBOL:
+            is_number_mode = True
             i += 6
             continue
-        else:
-            char = BRAILLE_TO_ENGLISH.get(chunk, '')
-            if char == '':
-                # Unrecognized Braille pattern
-                english.append('?')
-            else:
-                if number_mode:
-                    if char in NUMBERS_MAP:
-                        english.append(NUMBERS_MAP[char])
-                    else:
-                        english.append('?')
-                    # Do not reset number_mode; it continues until a space
+
+        if chunk in braille_to_english_map:
+            letter = braille_to_english_map[chunk]
+
+            if is_number_mode:
+                if letter in braille_to_number_map:
+                    english.append(braille_to_number_map[letter])
                 else:
-                    if capitalize_next:
-                        english.append(char.upper())
-                        capitalize_next = False
-                    else:
-                        english.append(char)
-            if char == ' ':
-                number_mode = False  # Reset number mode at space
-            i += 6
+                    english.append('?')
+                is_number_mode = False
+            elif is_capital_mode:
+                english.append(letter.upper())
+                is_capital_mode = False
+            else:
+                english.append(letter)
+        else:
+            english.append('?')  # Handle unrecognized Braille chunks
 
-    # Handle any remaining incomplete Braille patterns
-    if i < braille_length:
-        english.append('?')  # Placeholder for incomplete chunk
+        i += 6
 
     return ''.join(english)
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 translator.py '<text or braille>'")
-        sys.exit(1)
-
-    input_str = ' '.join(sys.argv[1:])
-
+def process_input(input_str: str) -> str:
+    """Process the input and determine whether it's Braille or English."""
     if is_braille(input_str):
-        output = braille_to_english(input_str)
-    else:
-        output = english_to_braille(input_str)
+        return braille_to_english(input_str)
+    return english_to_braille(input_str)
 
+def parse_arguments() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="Translate between Braille and English.")
+    parser.add_argument('text', metavar='TEXT', type=str, help="Text or Braille to translate")
+    return parser.parse_args()
+
+def main() -> None:
+    """Main entry point for the script."""
+    args = parse_arguments()
+    input_str = args.text
+
+    output = process_input(input_str)
     print(output)
 
 if __name__ == "__main__":
