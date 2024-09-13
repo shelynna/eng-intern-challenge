@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 
 import sys
 
-# created a dictionary that contains english letters and braille chracters
+# Define mappings for English to Braille
 ENGLISH_TO_BRAILLE = {
     'a': 'O.....', 'b': 'O.O...', 'c': 'OO....', 'd': 'OO.O..', 'e': 'O..O..',
     'f': 'OOO...', 'g': 'OOOO..', 'h': 'O.OO..', 'i': '.OO...', 'j': '.OOO..',
@@ -10,28 +11,55 @@ ENGLISH_TO_BRAILLE = {
     'u': 'O...OO', 'v': 'O.O.OO', 'w': '.OOO.O', 'x': 'OO..OO', 'y': 'OO.OOO', 'z': 'O..OOO',
     '0': '.OOOOO', '1': 'O.....', '2': 'O.O...', '3': 'OO....', '4': 'OO.O..', '5': 'O..O..',
     '6': 'OOO...', '7': 'OOOO..', '8': 'O.OO..', '9': '.OO...', ' ': '......',
-    ',': '..O...', ';': '..OO..', ':': '...O..', '.': '...OO.', '!': '...OO.', '?': '..O.O.'
 }
 
-# used capitalize to signal conversion and nuber sign to signal numbers
-CAPITALIZE = '.....O'  
-NUMBER_SIGN = '....OO'  
 
-# Mapping letters a-j to numbers 1-0 
+CAPITALIZE = '.....O'  
+NUMBER_SIGN = '....OO'
+
+
+# Visual representation map for Braille
+BRAILLE_VISUAL = {
+    'O': '●',  
+    '.': 'o',  
+}
+
+# Mapping letters a-j to numbers 1-0
 NUM_MAPPING = {
     'a': '1', 'b': '2', 'c': '3', 'd': '4', 'e': '5', 'f': '6',
     'g': '7', 'h': '8', 'i': '9', 'j': '0'
 }
+
+
 BRAILLE_TO_ENGLISH = {v: k for k, v in ENGLISH_TO_BRAILLE.items()}
 
-# created a function that checks for valid braille string
+
 def is_braille(input_str):
+    
     valid_chars = {'O', '.'}
     return all(char in valid_chars for char in input_str.replace(' ', ''))
 
 
-def english_to_braille(text):
+def visualize_braille(braille_str):
     
+    visual_representation = []
+   
+    for i in range(0, len(braille_str), 6):
+        chunk = braille_str[i:i + 6]
+        if len(chunk) == 6:
+            visual = (f"{BRAILLE_VISUAL[chunk[0]]} {BRAILLE_VISUAL[chunk[1]]}\n"
+                      f"{BRAILLE_VISUAL[chunk[2]]} {BRAILLE_VISUAL[chunk[3]]}\n"
+                      f"{BRAILLE_VISUAL[chunk[4]]} {BRAILLE_VISUAL[chunk[5]]}")
+            visual_representation.append(visual)
+        else:
+            visual_representation.append('Invalid Braille Chunk')
+
+   
+    return "\n\n".join(visual_representation)
+
+
+def english_to_braille(text, visualize=False):
+   
     braille = []
     number_mode = False
 
@@ -42,91 +70,44 @@ def english_to_braille(text):
             number_mode = False
         elif char.isdigit():
             if not number_mode:
-                braille.append(NUMBER_SIGN)  # Enter number mode
+                braille.append(NUMBER_SIGN) 
                 number_mode = True
             braille.append(ENGLISH_TO_BRAILLE[char])
         elif char == ' ':
-            braille.append(ENGLISH_TO_BRAILLE[' '])  # Add space
+            braille.append(ENGLISH_TO_BRAILLE[' ']) 
             number_mode = False
         else:
             braille.append(ENGLISH_TO_BRAILLE.get(char.lower(), '......'))  # Default for unknown char
             number_mode = False
 
-    return ''.join(braille)
+    braille_str = ''.join(braille)
 
-# this section contains functions that convert braille to english
+    
+    if visualize:
+        print(visualize_braille(braille_str))
 
-def braille_to_english(braille_str):
-    english = []
-    i = 0
-    capitalize_next = False
-    number_mode = False
-    braille_length = len(braille_str)
-
-    while i + 6 <= braille_length:
-        chunk = braille_str[i:i + 6]
-
-        if chunk == CAPITALIZE:
-            capitalize_next = True
-        elif chunk == NUMBER_SIGN:
-            number_mode = True
-        else:
-            char = BRAILLE_TO_ENGLISH.get(chunk, '?')
-            if number_mode and char in NUM_MAPPING:
-                english.append(NUM_MAPPING[char])
-            elif capitalize_next:
-                english.append(char.upper())
-                capitalize_next = False
-            else:
-                english.append(char)
-
-            # Exit number mode when a space or invalid character appears
-            if char == ' ' or char == '?':
-                number_mode = False
-
-        i += 6
-
-    # Handle any remaining characters that don't form a complete Braille chunk
-    if i < braille_length:
-        remaining = braille_str[i:]
-        english.append('?')  # Placeholder for incomplete chunk
-
-    return ''.join(english)
-
-    def validate_input(input_str):
-    if not input_str:
-        raise ValueError("Input cannot be empty.")
-
-    # Check if it's Braille
-    if is_braille(input_str):
-        return "braille"
-    elif all(char.isalnum() or char.isspace() or char in ',;:!?.' for char in input_str):
-        return "english"
-    else:
-        raise ValueError("Input contains invalid characters. Please provide valid English or Braille text.")
+    return braille_str
 
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 translator.py \"<text or braille>\"")
+        print("Usage: python3 translator.py \"<text or braille>\" [--visual]")
         sys.exit(1)
 
     input_str = ' '.join(sys.argv[1:])
+    visualize = False
 
-    try:
-        input_type = validate_input(input_str)
+    # Check if the user wants visual representation
+    if "--visual" in input_str:
+        visualize = True
+        input_str = input_str.replace("--visual", "").strip()
 
-        if input_type == "braille":
-            output = braille_to_english(input_str)
-        else:
-            output = english_to_braille(input_str)
-
-        print(output)
-
-    except ValueError as e:
-        print(f"Error: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    if is_braille(input_str):
+        print("Braille to English translation not supported in visual mode yet.")
+    else:
+        output = english_to_braille(input_str, visualize)
+        if not visualize:
+            print(output)
 
 
 if __name__ == "__main__":
