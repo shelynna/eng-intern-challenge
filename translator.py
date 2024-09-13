@@ -92,3 +92,42 @@ def braille_to_english(braille_str):
         english.append('?')  # Placeholder for incomplete chunk
 
     return ''.join(english)
+
+    def validate_input(input_str):
+    if not input_str:
+        raise ValueError("Input cannot be empty.")
+
+    # Check if it's Braille
+    if is_braille(input_str):
+        return "braille"
+    elif all(char.isalnum() or char.isspace() or char in ',;:!?.' for char in input_str):
+        return "english"
+    else:
+        raise ValueError("Input contains invalid characters. Please provide valid English or Braille text.")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python3 translator.py \"<text or braille>\"")
+        sys.exit(1)
+
+    input_str = ' '.join(sys.argv[1:])
+
+    try:
+        input_type = validate_input(input_str)
+
+        if input_type == "braille":
+            output = braille_to_english(input_str)
+        else:
+            output = english_to_braille(input_str)
+
+        print(output)
+
+    except ValueError as e:
+        print(f"Error: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+
+if __name__ == "__main__":
+    main()
