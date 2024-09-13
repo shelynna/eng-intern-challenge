@@ -53,3 +53,42 @@ def english_to_braille(text):
             number_mode = False
 
     return ''.join(braille)
+
+# this section contains functions that convert braille to english
+
+def braille_to_english(braille_str):
+    english = []
+    i = 0
+    capitalize_next = False
+    number_mode = False
+    braille_length = len(braille_str)
+
+    while i + 6 <= braille_length:
+        chunk = braille_str[i:i + 6]
+
+        if chunk == CAPITALIZE:
+            capitalize_next = True
+        elif chunk == NUMBER_SIGN:
+            number_mode = True
+        else:
+            char = BRAILLE_TO_ENGLISH.get(chunk, '?')
+            if number_mode and char in NUM_MAPPING:
+                english.append(NUM_MAPPING[char])
+            elif capitalize_next:
+                english.append(char.upper())
+                capitalize_next = False
+            else:
+                english.append(char)
+
+            # Exit number mode when a space or invalid character appears
+            if char == ' ' or char == '?':
+                number_mode = False
+
+        i += 6
+
+    # Handle any remaining characters that don't form a complete Braille chunk
+    if i < braille_length:
+        remaining = braille_str[i:]
+        english.append('?')  # Placeholder for incomplete chunk
+
+    return ''.join(english)
