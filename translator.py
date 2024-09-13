@@ -22,3 +22,34 @@ NUM_MAPPING = {
     'a': '1', 'b': '2', 'c': '3', 'd': '4', 'e': '5', 'f': '6',
     'g': '7', 'h': '8', 'i': '9', 'j': '0'
 }
+BRAILLE_TO_ENGLISH = {v: k for k, v in ENGLISH_TO_BRAILLE.items()}
+
+# created a function that checks for valid braille string
+def is_braille(input_str):
+    valid_chars = {'O', '.'}
+    return all(char in valid_chars for char in input_str.replace(' ', ''))
+
+
+def english_to_braille(text):
+    
+    braille = []
+    number_mode = False
+
+    for char in text:
+        if char.isupper():
+            braille.append(CAPITALIZE)  # Capitalize next letter
+            braille.append(ENGLISH_TO_BRAILLE.get(char.lower(), '......'))
+            number_mode = False
+        elif char.isdigit():
+            if not number_mode:
+                braille.append(NUMBER_SIGN)  # Enter number mode
+                number_mode = True
+            braille.append(ENGLISH_TO_BRAILLE[char])
+        elif char == ' ':
+            braille.append(ENGLISH_TO_BRAILLE[' '])  # Add space
+            number_mode = False
+        else:
+            braille.append(ENGLISH_TO_BRAILLE.get(char.lower(), '......'))  # Default for unknown char
+            number_mode = False
+
+    return ''.join(braille)
